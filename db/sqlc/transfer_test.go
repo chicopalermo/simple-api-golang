@@ -99,8 +99,8 @@ func TestUpdateTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, updatedTransfer)
 
-	require.Equal(t, updatedTransfer.FromAccountID, transfer.FromAccountID)
-	require.Equal(t, updatedTransfer.ToAccountID, transfer.ToAccountID)
+	require.Equal(t, transfer.FromAccountID, updatedTransfer.FromAccountID)
+	require.Equal(t, transfer.ToAccountID, updatedTransfer.ToAccountID)
 	require.Equal(t, arg.Amount, updatedTransfer.Amount)
-	require.WithinDuration(t, updatedTransfer.CreatedAt, transfer.CreatedAt, time.Second)
+	require.WithinDuration(t, transfer.CreatedAt, updatedTransfer.CreatedAt, time.Second)
 }
