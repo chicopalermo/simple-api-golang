@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ func TestTransferTx(t *testing.T) {
 	errs := make(chan error)
 	results := make(chan TransferTxResult)
 
-	for i := 0; i < n; i++ {
+	for range make([]int, n) {
 		go func() {
 			result, err := store.TransferTx(context.Background(), TransferTxParams{
 				FromAccountID: account1.ID,
@@ -33,7 +34,7 @@ func TestTransferTx(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < n; i++ {
+	for range make([]int, n) {
 		err := <-errs
 		require.NoError(t, err)
 
@@ -73,6 +74,30 @@ func TestTransferTx(t *testing.T) {
 		_, err = store.GetEntry(context.Background(), toEntry.ID)
 		require.NoError(t, err)
 
-		// TODO: check accounts
+		// check accounts
+		fromAccount := result.FromAccount
+		require.NotEmpty(t, fromAccount)
+		require.Equal(t, account1.ID, fromAccount.ID)
+
+		toAccount := result.ToAccount
+		require.NotEmpty(t, toAccount)
+		require.Equal(t, account2.ID, toAccount.ID)
+
+		account1Balance, _ := decimal.NewFromString(account1.Balance)
+		fromAccountBalance, _ := decimal.NewFromString(fromAccount.Balance)
+		account2Balance, _ := decimal.NewFromString(toAccount.Balance)
+		toAccountBalance, _ := decimal.NewFromString(toAccount.Balance)
+		zero := decimal.NewFromInt(0)
+		amountDecimal, _ := decimal.NewFromString(amount)
+
+		diff1 := account1Balance.Sub(fromAccountBalance)
+		diff2 := toAccountBalance.Sub(account2Balance)
+
+		require.Equal(t, diff1, diff2)
+		require.True(t, diff1.GreaterThan(zero))
+		require.True(t, diff1.Mod(amountDecimal).IsZero())
+
+		k := diff1.Div(amountDecimal)
+		require.True(t, k.GreaterThan(decimal.NewFromInt(0)) && k.LessThan(decimal.NewFromInt(int64(n+1))))
 	}
 }
